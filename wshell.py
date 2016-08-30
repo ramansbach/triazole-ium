@@ -70,7 +70,7 @@ def writeProtAndWat(ptop,pinds,pxyz,top,wxyz,winds,box,fname,fstyle):
         ri = ri.group(0)
         pind = pinds.index(pi)
         pxyza = pxyz[3*pind:3*pind+3]        
-        f.write('%5d%-5s%5s%5d% 8.3f% 8.3f %8.3f\n' % (int(ri),rname,aname,pi+1,pxyza[0],pxyza[1],pxyza[2]))
+        f.write('%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n' % (int(ri),rname,aname,pi+1,pxyza[0],pxyza[1],pxyza[2]))
     rind = int(ri)+1#track residue number
     aind = pi+1 #track atom number
     for wind in range(0,len(wxyz)/3):
@@ -87,7 +87,7 @@ def writeProtAndWat(ptop,pinds,pxyz,top,wxyz,winds,box,fname,fstyle):
         else:
             break #something went wrong
         wxyza = wxyz[3*wind:3*wind+3]
-        f.write('%5d%-5s%5s%5d% 8.3f% 8.3f %8.3f\n' % (rind,rname,aname,aind+1,wxyza[0],wxyza[1],wxyza[2]))
+        f.write('%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n' % (rind,rname,aname,aind+1,wxyza[0],wxyza[1],wxyza[2]))
         rind+=1
         aind+=1
     
@@ -104,7 +104,7 @@ def writeProtAndWat(ptop,pinds,pxyz,top,wxyz,winds,box,fname,fstyle):
         else:
             aname = 'HW2'
             af = 0
-        f.write('%5d%-5s%5s%5d% 8.3f% 8.3f %8.3f\n' % (rind,rname,aname,aind+1,2*box[0],0,0))
+        f.write('%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n' % (rind,rname,aname,aind+1,2*box[0],0,0))
         rind+=1
         aind+=1
         
@@ -265,37 +265,39 @@ def bbnparse(frame,hbg,bbns,naccbool,woxsel,hbcut,Ninds,wingraph,ningraph,hbang,
         #I ASSUME AT THIS POINT THAT THE NEXT ATOM IN THE TOPOLOGY FROM bbn IS THE BONDED HYDROGEN (OR THE NEXT THREE FOR THE END RESIDUES)
         #SHOULD RETURN ERROR IF IT'S NOT A HYDROGEN
         nns = md.compute_neighbors(frame,hbcut,np.array([bbn]),np.array(Ninds))[0]
-        if (bbn == min(bbns)): 
-            #then we are an end residue with a nitrogen + 3 Hs
-            for j in range(3):
-                hi = bbn+j+1
-                h = top.atom(hi)
-                if h.name!='H{0}'.format(j+1):
-                    #sanity check for hydrogens we're going to use in bonds
-                    print "At {0} (end res), did not find a bonded hydrogen.\n".format(bbn)
-                    return -1
-                else:
-                    for wn in wns:
-                        hbool = hbond(frame,bbn,wn,hi,hbang)
-                        if hbool:
-                            wnode = HBNode('W',wn)
-                            hbg.add_node(wnode)
-                            wingraph.append(wn)
-                            hbg.add_edge(centNode,wnode)
-                            
-                            #^^THIS PART IS SANITY-CHECK APPROVED (picked up all and no more of the Hbonds that VMD did in one particular frame--should keep checking as I go on with different frames)
-                    for N in nns:
-                        #(ii) if SC ns are an acceptor, the SC nitrogens - either way add SC nitrogens to graph
-                        #the SC N indices are in Ninds
-                        nnode = HBNode('SCN',N)
-                        hbg.add_node(nnode)                        
-                        if naccbool:
-                            hbool = hbond(frame,bbn,N,hi,hbang)
-                            if hbool:
-                                hbg.add_edge(centNode,nnode)
-                                ningraph.append(N)
+        #eliminate end residues for the time being
+#        if (bbn == min(bbns)): 
+#            #then we are an end residue with a nitrogen + 3 Hs
+#            for j in range(3):
+#                hi = bbn+j+1
+#                h = top.atom(hi)
+#                if h.name!='H{0}'.format(j+1):
+#                    #sanity check for hydrogens we're going to use in bonds
+#                    print "At {0} (end res), did not find a bonded hydrogen.\n".format(bbn)
+#                    return -1
+#                else:
+#                    for wn in wns:
+#                        hbool = hbond(frame,bbn,wn,hi,hbang)
+#                        if hbool:
+#                            wnode = HBNode('W',wn)
+#                            hbg.add_node(wnode)
+#                            wingraph.append(wn)
+#                            hbg.add_edge(centNode,wnode)
+#                            
+#                            #^^THIS PART IS SANITY-CHECK APPROVED (picked up all and no more of the Hbonds that VMD did in one particular frame--should keep checking as I go on with different frames)
+#                    for N in nns:
+#                        #(ii) if SC ns are an acceptor, the SC nitrogens - either way add SC nitrogens to graph
+#                        #the SC N indices are in Ninds
+#                        nnode = HBNode('SCN',N)
+#                        hbg.add_node(nnode)                        
+#                        if naccbool:
+#                            hbool = hbond(frame,bbn,N,hi,hbang)
+#                            if hbool:
+#                                hbg.add_edge(centNode,nnode)
+#                                ningraph.append(N)
             
-        else:
+        if (bbn!=min(bbns)):
+            #not an end residue
             hi = bbn+1
             h = top.atom(hi)
             if h.name!='H':
@@ -325,7 +327,7 @@ def bbnparse(frame,hbg,bbns,naccbool,woxsel,hbcut,Ninds,wingraph,ningraph,hbang,
                         if hbool:
                             hbg.add_edge(centNode,nnode)
                             ningraph.append(N)
-        return 1
+    return 1
                             
 def bboparse(frame,hbg,bbos,naccbool,woxsel,hbcut,Ninds,Cinds,wingraph,ningraph,cingraph,hbang,centNode):
     #make this its own function so we can look at this whole thing more easily
@@ -334,59 +336,126 @@ def bboparse(frame,hbg,bbos,naccbool,woxsel,hbcut,Ninds,Cinds,wingraph,ningraph,
     
     
     for bbo in bbos:
-        #(i) water as a donor - if so, add water to graph
-        wns = md.compute_neighbors(frame,hbcut,np.array([bbo]),woxsel)[0] #candidate oxygen donors
-        #I ASSUME AT THIS POINT THAT THE NEXT TWO ATOMS IN THE TOPOLOGY FROM THE O ARE THE H1 AND THE H2
-        #IF THEY AREN'T, WE BETTER THROW AN ERROR
-        nns = md.compute_neighbors(frame,hbcut,np.array([bbo]),np.array(Ninds))[0]
-        cns = md.compute_neighbors(frame,hbcut,np.array([bbo]),np.array(Cinds))[0]
+        if (bbo!=min(bbos)):
+            #eliminate end residue
+            #(i) water as a donor - if so, add water to graph
+            wns = md.compute_neighbors(frame,hbcut,np.array([bbo]),woxsel)[0] #candidate oxygen donors
+            #I ASSUME AT THIS POINT THAT THE NEXT TWO ATOMS IN THE TOPOLOGY FROM THE O ARE THE H1 AND THE H2
+            #IF THEY AREN'T, WE BETTER THROW AN ERROR
+            nns = md.compute_neighbors(frame,hbcut,np.array([bbo]),np.array(Ninds))[0]
+            cns = md.compute_neighbors(frame,hbcut,np.array([bbo]),np.array(Cinds))[0]
+            for wn in wns:
+                for j in range(2):
+                    hi = wn+j+1
+                    h = top.atom(hi)
+                    if h.name!='H'+str(j+1):
+                        print "At {0} (water), did not find a bonded hydrogen.\n".format(wn)
+                        return -1
+                    hbool = hbond(frame,wn,bbo,hi,hbang)
+                    if hbool:
+                        #we have found a hydrogen bond
+                        #we add the water to the graph, and we add an edge between it and the central node
+                        wnode = HBNode('W',wn)
+                        
+                        hbg.add_node(wnode)
+                        wingraph.append(wn)
+                        hbg.add_edge(centNode,wnode)
+                
+      
+                      
+            if not naccbool:
+                #(ii) if SC ns are a donor, the SC nitrogens 
+                #the SC N indices are in Ninds
+                for N in nns:
+                    nnode = HBNode('SCN',N)
+                    hi = N+1
+                    h = top.atom(hi)
+                    if h.name!='H':
+                        print "At {0} (SCN), did not find a bonded hydrogen.\n".format(N)
+                        return -1
+                    hbool = hbond(frame,N,bbo,hi,hbang)
+                    if hbool:
+                        hbg.add_edge(centNode,nnode)
+                        ningraph.append(N)
+            for C in cns:
+                #(iii) SC carbons
+                cnode = HBNode('SCC',C)
+                hi = C+1
+                h = top.atom(hi)
+                if h.name[0]!='H':
+                    print "At {0} (SCC), did not find a bonded hydrogen.\n".format(C)
+                    return -1
+                hbool = hbond(frame,C,bbo,hi,hbang)
+                if hbool:
+                    hbg.add_edge(centNode,cnode)
+                    cingraph.append(C)
+    return 1
+    
+def scdonors(frame,hbg,scinds,woxsel,hbcut,wingraph,hbang,sctag):
+    #given the indices of the sidechain donor atoms, check for hbonds with each of them and water os
+    
+    top = frame.topology 
+    for sca in scinds:
+        hi = sca+1
+        h = top.atom(hi)
+        if h.name[0]!='H':
+            print "At {0} (SC), did not find a bonded hydrogen.\n".format(sca)
+            return -1
+        wns = md.compute_neighbors(frame,hbcut,np.array([sca]),woxsel)[0] #find all water oxygens within cutoff
+        for wn in wns:
+            hbool = hbond(frame,sca,wn,hi,hbang)
+            if hbool:
+                #we have found an H-bond
+                #add water to the graph, add an edge between it and the relevant sca node
+                wnode = HBNode('W',wn)
+                scnode = HBNode(sctag,sca)
+                hbg.add_node(wnode)
+                wingraph.append(wn)
+                hbg.add_edge(scnode,wnode)                                  
+    return 1
+
+def scacceps(frame,hbg,scinds,woxsel,hbcut,wingraph,hbang,sctag):
+    #same as scdonors, except the SC atom is the acceptor, water is the donor
+    top = frame.topology 
+    for sca in scinds:
+        wns = md.compute_neighbors(frame,hbcut,np.array([sca]),woxsel)[0] #find all water oxygens within cutoff
         for wn in wns:
             for j in range(2):
                 hi = wn+j+1
                 h = top.atom(hi)
                 if h.name!='H'+str(j+1):
-                    print "At {0} (water), did not find a bonded hydrogen.\n".format(wn)
-                    return -1
-                hbool = hbond(frame,wn,bbo,hi,hbang)
+                        print "At {0} (water), did not find a bonded hydrogen.\n".format(wn)
+                        return -1
+                hbool = hbond(frame,wn,sca,hi,hbang)
                 if hbool:
-                    #we have found a hydrogen bond
-                    #we add the water to the graph, and we add an edge between it and the central node
+                    #we have found an H-bond
+                    #add water to the graph, add an edge between it and the relevant sca node
                     wnode = HBNode('W',wn)
-                    
+                    scnode = HBNode(sctag,sca)
                     hbg.add_node(wnode)
                     wingraph.append(wn)
-                    hbg.add_edge(centNode,wnode)
-            
-  
-                  
-        if not naccbool:
-            #(ii) if SC ns are a donor, the SC nitrogens 
-            #the SC N indices are in Ninds
-            for N in nns:
-                nnode = HBNode('SCN',N)
-                hi = N+1
-                h = top.atom(hi)
-                if h.name!='H':
-                    print "At {0} (SCN), did not find a bonded hydrogen.\n".format(N)
-                    return -1
-                hbool = hbond(frame,N,bbo,hi,hbang)
-                if hbool:
-                    hbg.add_edge(centNode,nnode)
-                    ningraph.append(N)
-        for C in cns:
-            #(iii) SC carbons
-            cnode = HBNode('SCC',C)
-            hi = C+1
+                    hbg.add_edge(scnode,wnode)    
+                    
+    return 1
+    
+def sctosc(frame,hbg,Dinds,Ainds,hbcut,hbang,dtag,atag):
+    #check sc to sc donor to acceptors
+    top = frame.topology
+    for D in Dinds:
+        ans = md.compute_neighbors(frame,hbcut,np.array([D]),Ainds)[0]
+        for A in ans:
+            hi = D+1
             h = top.atom(hi)
-            if h.name!='H':
-                print "At {0} (SCC), did not find a bonded hydrogen.\n".format(C)
+            if h.name[0]!='H':
+                print "At {0} (SC donor), did not find a bonded hydrogen.\n".format(D)
                 return -1
-            hbool = hbond(frame,C,bbo,hi,hbang)
+            hbool = hbond(frame,D,A,hi,hbang)
             if hbool:
-                hbg.add_edge(centNode,cnode)
-                cingraph.append(C)
-        return 1
-                            
+                Dnode = HBNode(dtag,D)
+                Anode = HBNode(atag,A)
+                hbg.add_edge(Dnode,Anode)
+    return 1
+
 def hbgraph(frame,Cinds,Ninds,ndxfile,naccbool,hbcut=0.35,hbang=(120.0*np.pi/180.0)):
     #takes a frame of a trajectory and turns it into a graph
     #where we have a protein, the first node of the graph is a lump of all bb nitrogens and oxygens
@@ -397,18 +466,18 @@ def hbgraph(frame,Cinds,Ninds,ndxfile,naccbool,hbcut=0.35,hbang=(120.0*np.pi/180
     #if naccbool = true, the SC nitrogens are acceptors; else they are donors
     top = frame.topology
     #instantiate graph and add the central node
-    hbg = nx.Graph()
+    hbg = nx.Graph() #there SHOULDN'T be multiple edges between the same two nodes, I don't think
     centNode = HBNode('B',-1)
     hbg.add_node(centNode) 
     bbsel = groupFromNdx(ndxfile,'[ Backbone ]')
     nsall = top.select("name N")
-    osall = top.select("not water and name O")
     woxsel = top.select("water and name O")
     #get backbone nitrogens+associated hydrogens (these are in BB selection, named N)
     #end residue nitrogens have THREE associated hydrogens that might be involved in bonding!
     bbns = list(set(bbsel) & set(nsall))
-    #get backbone oxygens (these are in BB selection, named O)
-    bbos = list(set(bbsel) & set(osall))
+    #get backbone oxygens (these oxygens that are named O but not water--other oxygens have different names!)
+    #eliminate end residues from consideration entirely
+    bbos = top.select("not water and name O")
     wingraph = [] #for debugging only
     ningraph = [] #for debugging only
     cingraph = [] #for debugging only
@@ -426,14 +495,74 @@ def hbgraph(frame,Cinds,Ninds,ndxfile,naccbool,hbcut=0.35,hbang=(120.0*np.pi/180
     herr  = bboparse(frame,hbg,bbos,naccbool,woxsel,hbcut,Ninds,Cinds,wingraph,ningraph,cingraph,hbang,centNode)
     if herr==-1:
         return []
-    #next check if there are bonds with SC carbons to water - add any waters to graph
-    
-    #next check if there are bonds with SC nitrogens to water - add any waters to graph
-    
-    #if SC ns are acceptors, find bonds with SC carbons/SC nitrogens
-    
+    #^^SANITY CHECKED UP TO HERE
+    #next check if there are bonds with SC carbons to water - add any waters to graph (these guys are always donors)
+    herr = scdonors(frame,hbg,Cinds,woxsel,hbcut,wingraph,hbang,'SCC')
+    if herr==-1:
+        return []
+    #next check if there are bonds with SC nitrogens to water - add any waters to graph (these may be donors or acceptors)
+    if naccbool:
+        herr = scacceps(frame,hbg,Ninds,woxsel,hbcut,wingraph,hbang,'SCN')
+        if herr == -1:
+            return []
+    else:
+        herr = scdonors(frame,hbg,Ninds,woxsel,hbcut,wingraph,hbang,'SCN')
+        if herr == -1:
+            return []
     #finally go over all waters in graph and find bonds to other waters.  Waters that are not in graph get added and also checked
     #maybe use a list + pop structure to track?
+    #while the list is not empty, pop the next index, check for hbonded neighbors
+    #if an hbonded neighbor exists, add it to the graph and the list
+    potneighs = list(wingraph)
+    while len(potneighs) > 0:
+        currw = potneighs.pop()
+        wns = md.compute_neighbors(frame,hbcut,np.array([currw]),woxsel)[0]
+        for j in range(2):
+            hi = currw+j+1
+            h = top.atom(hi)
+            if h.name!='H'+str(j+1):
+                print "At {0} (water), did not find a bonded hydrogen.\n".format(wn)
+                return -1
+        for wn in wns:
+            #check currw as a donor
+             
+            for j in range(2):
+                hi = currw+j+1
+                hbool = hbond(frame,currw,wn,hi,hbang)
+                if hbool:
+                    wnode = HBNode('W',wn)
+                    hbg.add_node(wnode)
+                    currwnod = HBNode('W',currw)
+                    hbg.add_edge(currwnod,wnode)
+                                
+                    if wn not in wingraph:
+                        potneighs.append(wn)
+                        wingraph.append(wn)
+                    
+                
+            #check wn as a donor
+            for j in range(2):
+                hi = wn+j+1
+                h = top.atom(hi)
+                if h.name!='H'+str(j+1):
+                    print "At {0} (water), did not find a bonded hydrogen.\n".format(wn)
+                    return -1
+                hbool = hbond(frame,wn,currw,hi,hbang)
+                if hbool:
+                    wnode = HBNode('W',wn)
+                    hbg.add_node(wnode)
+                    currwnod = HBNode('W',currw)
+                    hbg.add_edge(currwnod,wnode)
+                                
+                    if wn not in wingraph:
+                        potneighs.append(wn)
+                        wingraph.append(wn)
+    
+    #if SC ns are acceptors, find bonds with SC carbons/SC nitrogens
+    if naccbool:
+        herr = sctosc(frame,hbg,Cinds,Ninds,hbcut,hbang,'SCC','SCN')
+        if herr == -1:
+            return []
     
     return (hbg,wingraph,ningraph,cingraph)
         
@@ -448,29 +577,73 @@ if __name__ == "__main__":
     ptopfile = folder+'after_md_PRIOR_protein_fit.gro'
     ptoplines = 246 #lines in ptopfile
     ndxfile = folder+'index.ndx'
-    cutoff = 0.7 #trr file is in nm, ps    
+    cutoff = 0.4 #trr file is in nm, ps    
     itpfile = folder+'PTPLG.top'
     outfname = folder+'md_whole0.gro'
     Cd = np.array([19,43,67,91,115,139,163,187,211,236]) #triazole carbon donor indices on side chain
     Na = np.array([17,41,65,89,113,137,161,185,209,234]) #triazole nitrogen acceptors on side chain
+    naccbool = True    
     #Cd = np.array([25,50,75,100,125,150,175,200,225,251])   #triazolium carbon donors
     #Na = np.array([17,42,67,92,117,142,167,192,217,243]) #triazolium nitrogen donors
-    
+    #naccbool = False
     
     traj = md.load(trajfile,top=topfile)
    
     top = traj.topology
 
-    #addBonds(itpfile,top)    
-    #ptop = groTop(ptopfile,ptoplines)
+    addBonds(itpfile,top)    
+    ptop = groTop(ptopfile,ptoplines)
     #minds = minDistsT(traj,ndxfile,'mindistW-BB.dat')
     #make trajectory of whole + water shell (this isn't super efficient right now)
-    (hbnn,win,nin,cin) = hbgraph(traj[0],Cd,Na,ndxfile,False)
-    print win    
-    print nin
-    print cin
     #moveShell(traj[0],top,ptop,cutoff,ndxfile,outfname,'w')
-    
-    #for f in range(1,traj.n_frames):
-     #   print f
-      #  moveShell(traj[f],top,ptop,cutoff,ndxfile,outfname,'a')
+    (hbnn,win,nin,cin) = hbgraph(traj[0],Cd,Na,ndxfile,naccbool)
+    #print win    
+    #print nin
+    #print cin
+    efile = open(folder+'edges.dat','w')
+    for edge in hbnn.edges():
+        efile.write('{0}\n'.format(edge))
+    efile.close()
+
+#    
+#    for f in range(1,traj.n_frames):
+#        print f
+#        moveShell(traj[f],top,ptop,cutoff,ndxfile,outfname,'a')
+#        
+#        
+#    ##TRIAZOLIUM##
+#    folder = '/home/rachael/JJsims/hbonding/triazolium/6x_md_CAT/'
+#    trajfile = folder+'md.trr'
+#        
+#    #trajfile = folder+'md_whole0.gro'    
+#    topfile = folder+'after_md_PRIOR.gro'
+#    ptopfile = folder+'after_md_PRIOR_protein_fit.gro'
+#    ptoplines = 256 #lines in ptopfile
+#    ndxfile = folder+'index.ndx'
+#    cutoff = 0.7 #trr file is in nm, ps    
+#    itpfile = folder+'PTPLGp.top'
+#    outfname = folder+'md_whole0.gro'
+#    #Cd = np.array([19,43,67,91,115,139,163,187,211,236]) #triazole carbon donor indices on side chain
+#    #Na = np.array([17,41,65,89,113,137,161,185,209,234]) #triazole nitrogen acceptors on side chain
+#    #naccbool = True    
+#    Cd = np.array([25,50,75,100,125,150,175,200,225,251])   #triazolium carbon donors
+#    Na = np.array([17,42,67,92,117,142,167,192,217,243]) #triazolium nitrogen donors
+#    naccbool = False
+#    
+#    traj = md.load(trajfile,top=topfile)
+#   
+#    top = traj.topology
+#
+#    addBonds(itpfile,top)    
+#    ptop = groTop(ptopfile,ptoplines)
+#    #minds = minDistsT(traj,ndxfile,'mindistW-BB.dat')
+#    #make trajectory of whole + water shell (this isn't super efficient right now)
+#    #(hbnn,win,nin,cin) = hbgraph(traj[0],Cd,Na,ndxfile,naccbool)
+#    #print win    
+#    #print nin
+#    #print cin
+#    moveShell(traj[0],top,ptop,cutoff,ndxfile,outfname,'w')
+#    
+#    for f in range(1,traj.n_frames):
+#        print f
+#        moveShell(traj[f],top,ptop,cutoff,ndxfile,outfname,'a')
